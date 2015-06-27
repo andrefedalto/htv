@@ -1,4 +1,8 @@
 <?php
+require_once('../libs/mysqli/MysqliDb.php');
+$db = new Mysqlidb('db.utfapp.com', 'htv', '123qweasd', 'htv');
+if(!$db) die("Database error");
+
 
 require_once __DIR__.'/../lib/Dropbox/strict.php';
 
