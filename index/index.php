@@ -194,6 +194,9 @@ else if ($requestPath == "/tagger") {
 //        $metadata = $dbxClient->getFile($picture['path'], $fd);
         $picture = $dbxClient->getThumbnail($_picture->getField('path'), 'jpeg', 'xl');
 
+        $_picture->setField('image', $picture[1]);
+        $_picture->setField('mime_type', $picture[0]['mime_type']);
+
         fwrite($fd, $picture[1]);
 
 
@@ -250,8 +253,52 @@ else if ($requestPath == "/tagger") {
 
 
 }
+else if ($requestPath == "/loader") {
+    //$dbxClient = getClient();
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
+
+    if ($dbxClient === false) {
+        header("Location: ".getPath("dropbox-auth-start"));
+        exit;
+    }
+
+
+
+    $db->where ("image IS NULL");
+    //$db->where('idPicture', 111);
+    $picture = $db->getOne('picture');
+
+    $_picture = new DataManager('Picture');
+    $_picture->load($picture['idPicture']);
+
+    if ($picture == null)
+    {
+        echo "all done";
+    }
+    else
+    {
+
+
+
+//        $metadata = $dbxClient->getFile($picture['path'], $fd);
+        $picture = $dbxClient->getThumbnail($_picture->getField('path'), 'jpeg', 'xl');
+        $_picture->setField('image', $picture[1]);
+        $_picture->setField('mime_type', $picture[0]['mime_type']);
+        $_picture->save();
+        header("Refresh:0");
+
+
+    }
+
+
+}
 else if ($requestPath == "/thumb") {
     //$dbxClient = getClient();
+
+    $_GET['path'] = base64_decode($_GET['path']);
+
+
     $user = $db->getOne('user');
     $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
 
@@ -264,15 +311,53 @@ else if ($requestPath == "/thumb") {
         header("Location: ".getPath(""));
         exit;
     }
+
     $path = $_GET['path'];
 
     $fd = tmpfile();
     //$metadata = $dbxClient->getFile($path, $fd);
-    $metadata = $dbxClient->getThumbnail($_GET['path'], 'jpeg', 'xl');
+    $metadata = $dbxClient->getThumbnail($_GET['path'], 'png', 'xl');
 
     header("Content-Type: ".$metadata[0]['mime_type']);
     fseek($fd, 0);
     fwrite($fd, $metadata[1]);
+    fseek($fd, 0);
+    fpassthru($fd);
+    fclose($fd);
+}
+else if ($requestPath == "/thumb2") {
+    //$dbxClient = getClient();
+
+    $_GET['path'] = base64_decode($_GET['path']);
+
+
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
+
+    if ($dbxClient === false) {
+        header("Location: ".getPath("dropbox-auth-start"));
+        exit;
+    }
+
+    if (!isset($_GET['path'])) {
+        header("Location: ".getPath(""));
+        exit;
+    }
+
+    $path = $_GET['path'];
+
+    $_picture = new DataManager('Picture');
+//    $_picture->setField('userId', 1);
+//    $_picture->setField('path', $path);
+    $_picture->load($_GET['id']);
+
+    $fd = tmpfile();
+    //$metadata = $dbxClient->getFile($path, $fd);
+    //$metadata = $dbxClient->getThumbnail($_GET['path'], 'png', 'xl');
+
+    header("Content-Type: ".$_picture->getField('mime_type'));
+    fseek($fd, 0);
+    fwrite($fd, $_picture->getField('image'));
     fseek($fd, 0);
     fpassthru($fd);
     fclose($fd);

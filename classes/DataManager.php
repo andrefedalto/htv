@@ -31,7 +31,9 @@ class DataManager {
             'country'         => false,
             'isFolder'              => false,
             'geoLocated'              => false,
-            'tagged'              => false
+            'tagged'              => false,
+            'image'             => false,
+            'mime_type'             => false
         ),
 
         'Tag' => array(

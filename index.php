@@ -85,11 +85,13 @@ $app->get(
         foreach ($pictures as $picture)
         {
             $tmp = array();
-            $tmp['url'] = 'https://htv.utfapp.com/index/index.php/thumb?path='.$picture['path'];
+            //$tmp['url2'] = 'https://htv.utfapp.com/index/index.php/thumb?path='.base64_encode($picture['path']);
+            $tmp['url'] = 'https://htv.utfapp.com/index/index.php/thumb2?path=/&id='.($picture['idPicture']);
             $tmp['distance'] = $picture['distance'];
             $tmp['address'] = $picture['address'];
             $tmp['city'] = $picture['city'];
             $tmp['country'] = $picture['country'];
+            $tmp['date'] = $picture['date'];
 
             $db->where("idPicture", $picture['idPicture']);
             $tags = $db->rawQuery("SELECT t.tag FROM picturetag pt LEFT JOIN tag t ON t.idTag = pt.idTag WHERE idPicture = ".$picture['idPicture']);
@@ -101,11 +103,27 @@ $app->get(
 
             $tmp['tags'] = implode(",", $t);
 
-            array_push($_output, $tmp);
+            $year = date("Y", strtotime($tmp['date']));
+
+            if (!isset($_output[$year]))
+                $_output[$year] = array();
+
+            array_push($_output[$year], $tmp);
         }
 
 
-        $data = $_output;
+
+        $_OUT = array();
+        foreach($_output as $k => $v)
+        {
+            $_o = array();
+            $_o['year'] = $k;
+            $_o['pictures'] = $v;
+
+            array_push($_OUT, $_o);
+        }
+
+        $data = $_OUT;
 
         $app->response()->status(200);
 
@@ -123,42 +141,57 @@ $app->get(
 
 
         $tags = explode(",", $app->request()->params('tags'));
+
+
+
         $ts = array();
         foreach($tags as $tag)
         {
             $t = "'".trim($tag)."'";
             array_push($ts, $t);
         }
+
+        $tagsearch = "";
+        if (sizeof($tags) > 1)
+            $tagsearch = "AND tag IN (".implode(",", $ts).")";
+
+
         $query = "
-            SELECT * FROM (select p.IdPicture as 'Id', p.path as 'Path', count(t.idTag) as 'Count', pt.probs as 'Probability' from picture p
-            INNER JOIN picturetag pt on p.idPicture = pt.idPicture
-            INNER JOIN tag t on pt.idTag = t.idTag
-            WHERE (t.tag IN (".implode(',', $ts).") OR p.address LIKE '%".trim($tags[0])."%') AND pt.probs > 0.9
-            GROUP BY p.IdPicture) as temp
-            ORDER BY temp.Count DESC, temp.Id ASC
+            SELECT COUNT(idTag) as tags, path, address, city, country, idPicture, date FROM gallery
+            WHERE address LIKE '%".trim($tags[0])."%' ".$tagsearch."
+            GROUP BY idPicture
+            ORDER BY tags DESC, probs DESC
+            LIMIT 15
         ";
 
         $pictures = $db->rawQuery($query);
+
+
 
 
         $_output = array();
         foreach ($pictures as $picture)
         {
             $tmp = array();
-            $tmp['url'] = 'https://htv.utfapp.com/index/index.php/thumb?path='.$picture['Path'];
-            $tmp['tagCount'] = $picture['Count'];
-//            $tmp['address'] = $picture['address'];
-//            $tmp['city'] = $picture['city'];
-//            $tmp['country'] = $picture['country'];
-//
-//            $db->where("idPicture", $picture['idPicture']);
-//            $t = array();
-//            foreach ($tags as $tag)
-//            {
-//                array_push($t, $tag['tag']);
-//            }
-//
-//            $tmp['tags'] = implode(",", $t);
+            $tmp['url'] = 'https://htv.utfapp.com/index/index.php/thumb?path='.str_replace("/", "/", str_replace("picture", "Picture", $picture['path']));
+            //$tmp['url2'] = 'https://htv.utfapp.com/index/index.php/thumb?path='.base64_encode($picture['path']);
+            $tmp['url'] = 'https://htv.utfapp.com/index/index.php/thumb2?path=/&id='.($picture['idPicture']);
+            $tmp['tagCount'] = $picture['tags'];
+            $tmp['address'] = $picture['address'];
+            $tmp['city'] = $picture['city'];
+            $tmp['country'] = $picture['country'];
+            $tmp['date'] = $picture['date'];
+
+            $db->where("idPicture", $picture['idPicture']);
+            $tags = $db->rawQuery("SELECT t.tag FROM picturetag pt LEFT JOIN tag t ON t.idTag = pt.idTag WHERE idPicture = ".$picture['idPicture']);
+
+            $t = array();
+            foreach ($tags as $tag)
+            {
+                array_push($t, $tag['tag']);
+            }
+
+            $tmp['tags'] = implode(",", $t);
 
             array_push($_output, $tmp);
         }
