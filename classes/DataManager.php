@@ -16,20 +16,34 @@ class DataManager {
         'User' => array(
             'idUser'            => false,
             'userName'         => true,
-            'session'              => false
+            'session'              => true
         ),
 
         'Picture' => array(
             'idPicture'            => false,
             'idUser'         => true,
             'path'         => true,
-            'latitude'         => false,
-            'longitude'         => false,
+            'lat'         => false,
+            'lon'         => false,
             'date'         => false,
             'address'         => false,
             'city'         => false,
             'country'         => false,
-            'isFolder'              => false
+            'isFolder'              => false,
+            'geoLocated'              => false,
+            'tagged'              => false
+        ),
+
+        'Tag' => array(
+            'idTag'            => false,
+            'tag'         => true
+        ),
+
+        'PictureTag' => array(
+            'idPictureTag'            => false,
+            'idPicture'         => true,
+            'idTag'         => true,
+            'probs'              => false
         )
 
     );
@@ -251,6 +265,46 @@ class DataManager {
         return true;
     }
 
+    /**
+     * delete
+     *
+     * a partir do ID identificado, apaga a instancia atual
+     *
+     * @return bool (true quando carregou, false quando nao encontrou)
+     */
+    public function delete($id = null)
+    {
+        if ($id == null)
+        {
+            foreach($this->_validFields[$this->type] as $key => $value)
+            {
+                if ($value == true && $this->getField($key) == null)
+                {
+                    $this->log->pushLog($this, 500, 'Campo obrigatorio faltando: ' . $key);
+                    return false;
+                }
+
+                if ($value == true)
+                    $this->db->where($key, $this->getField($key));
+            }
+        }
+        else
+        {
+            $this->db->where('id' . $this->type, $id);
+        }
+
+        $data = $this->db->getOne(strtolower($this->type));
+
+        if ($data == null)
+            return false;
+        else
+        {
+            $this->db->where('id' . $this->type, $data['id' . $this->type]);
+            $this->db->delete(strtolower($this->type));
+
+            return true;
+        }
+    }
 
 
 

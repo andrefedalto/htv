@@ -770,7 +770,7 @@ class Client
     {
         Path::checkArg("path", $path);
 
-        return $this->_getMetadata($path, array("list" => "true", "file_limit" => "25000"));
+        return $this->_getMetadata($path, array("list" => "true", "file_limit" => "25000", "include_media_info" => true));
     }
 
     /**

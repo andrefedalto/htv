@@ -1,8 +1,15 @@
 <?php
 require_once('../libs/mysqli/MysqliDb.php');
+require_once('../libs/Curl.php');
+require_once('../classes/Log.php');
+require_once('../classes/DataManager.php');
+
 $db = new Mysqlidb('db.utfapp.com', 'htv', '123qweasd', 'htv');
 if(!$db) die("Database error");
 
+use \Curl\Curl;
+
+$curl = new Curl();
 
 require_once __DIR__.'/../lib/Dropbox/strict.php';
 
@@ -19,17 +26,23 @@ $requestPath = init();
 session_start();
 
 if ($requestPath === "/") {
-    $dbxClient = getClient();
+
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
+
+
+    //$dbxClient = getClient();
 
     if ($dbxClient === false) {
         header("Location: ".getPath("dropbox-auth-start"));
         exit;
     }
 
-    $path = "/";
+    $path = "/Pictures";
     if (isset($_GET['path'])) $path = $_GET['path'];
 
     $entry = $dbxClient->getMetadataWithChildren($path);
+
     if ($entry['is_dir']) {
         echo renderFolder($entry);
     }
@@ -37,8 +50,253 @@ if ($requestPath === "/") {
         echo renderFile($entry);
     }
 }
+else if ($requestPath === "/geocoder")
+{
+    $db->where('geoLocated', 0);
+    $picture = $db->getOne('picture');
+
+    if ($picture == null)
+    {
+        echo "all done";
+    }
+    else
+    {
+        $_picture = new DataManager('Picture');
+        $_picture->load($picture['idPicture']);
+
+        if ($picture['lat'] == null || $picture['lon'] == null)
+        {
+            $_picture->setField('geoLocated', 1);
+            $_picture->save();
+
+            header("Refresh:0");
+
+        }
+        else
+        {
+
+            $geocode = file_get_contents("http://nominatim.openstreetmap.org/reverse?format=json&lat=".$picture['lat']."&lon=".$picture['lon']."&zoom=18&addressdetails=1");
+            $geocode = json_decode($geocode, true);
+
+            if (isset($geocode['display_name']))
+                $_picture->setField('address', $geocode['display_name']);
+
+            if (isset($geocode['address']))
+            {
+                if (isset($geocode['address']['city']))
+                    $_picture->setField('city', $geocode['address']['city']);
+
+                if (isset($geocode['address']['country']))
+                    $_picture->setField('country', $geocode['address']['country']);
+            }
+
+            header("Refresh:0");
+
+
+            $_picture->setField('geoLocated', 1);
+            $_picture->save();
+
+
+        }
+    }
+
+}
+else if ($requestPath === "/indexer") {
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
+
+
+    //$dbxClient = getClient();
+
+    if ($dbxClient === false) {
+        header("Location: ".getPath("dropbox-auth-start"));
+        exit;
+    }
+
+    $db->where('isFolder', 1);
+    $folder = $db->getOne('picture');
+
+
+    if ($folder == null)
+    {
+        echo "all done";
+    }
+    else
+    {
+        $entry = $dbxClient->getMetadataWithChildren($folder['path']);
+
+        foreach($entry['contents'] as $child)
+        {
+            $_picture = new DataManager('Picture');
+            $_picture->setField('idUser', 1);
+            $_picture->setField('path', $child['path']);
+            $_picture->setField('isFolder', $child['is_dir']);
+
+            if (isset($child['photo_info']))
+            {
+                if (isset($child['photo_info']['lat_long']))
+                {
+                    $_picture->setField('lat', $child['photo_info']['lat_long'][0]);
+                    $_picture->setField('lon', $child['photo_info']['lat_long'][1]);
+                }
+
+                if (isset($child['photo_info']['time_taken']))
+                {
+                    $when = strtotime($child['photo_info']['time_taken']);
+                    $when = date("Y-m-d H:i:s", $when);
+
+                    $_picture->setField('date', $when);
+                }
+            }
+            $_picture->save();
+        }
+
+        $_folder = new DataManager('Picture');
+        $_folder->load($folder['idPicture']);
+        $_folder->delete();
+
+        header("Refresh:1");
+    }
+
+
+
+
+}
+else if ($requestPath == "/tagger") {
+    //$dbxClient = getClient();
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
+
+    if ($dbxClient === false) {
+        header("Location: ".getPath("dropbox-auth-start"));
+        exit;
+    }
+
+
+
+    $db->where('tagged', 0);
+    //$db->where('idPicture', 111);
+    $picture = $db->getOne('picture');
+
+    $_picture = new DataManager('Picture');
+    $_picture->load($picture['idPicture']);
+
+    if ($picture == null)
+    {
+        echo "all done";
+    }
+    else
+    {
+
+        $fd = tmpfile();
+
+
+//        $metadata = $dbxClient->getFile($picture['path'], $fd);
+        $picture = $dbxClient->getThumbnail($_picture->getField('path'), 'jpeg', 'xl');
+
+        fwrite($fd, $picture[1]);
+
+
+
+        $tempFile = stream_get_meta_data($fd)['uri'];
+        copy($tempFile, './temp.jpg');
+
+        fclose($fd);
+
+        $url =  'http://corsify.appspot.com/https://htv.utfapp.com/index/temp.jpg';
+
+
+//NOt needed since dropbox gives the thumb 1024x768
+//        $thumb = new Imagick();
+//        $thumb->readImage('temp.jpg');
+//        $thumb->resizeImage(1024,768,Imagick::FILTER_LANCZOS,1);
+//        $thumb->writeImage('temp.jpg');
+//        $thumb->clear();
+//        $thumb->destroy();
+
+
+        $curl = new Curl();
+        $curl->setHeader('Authorization', 'Bearer PN1ijSZQLfi0nyL7JQybssi5h4V22G');
+        $curl->get('https://api.clarifai.com/v1/tag/?url='.$url);
+
+        $data = $curl->response;
+
+        if (isset($data->status_code) && $data->status_code == "OK")
+        {
+            $data = $data->results[0];
+            //var_dump($data->result->tag->classes);
+
+            foreach($data->result->tag->classes as $key => $value)
+            {
+                $_tag = new DataManager('Tag');
+                $_tag->setField('tag', $data->result->tag->classes[$key]);
+                $_tag->save();
+
+                $_pictureTag = new DataManager('PictureTag');
+                $_pictureTag->setField('idPicture', $_picture->getField('idPicture'));
+                $_pictureTag->setField('idTag', $_tag->getField('idTag'));
+                $_pictureTag->setField('probs', $data->result->tag->probs[$key]);
+                $_pictureTag->save();
+            }
+        }
+
+        $_picture->setField('tagged', 1);
+        $_picture->save();
+
+        header("Refresh:0");
+
+
+    }
+
+
+}
+else if ($requestPath == "/thumb") {
+    //$dbxClient = getClient();
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
+
+    if ($dbxClient === false) {
+        header("Location: ".getPath("dropbox-auth-start"));
+        exit;
+    }
+
+
+
+    $db->where('idPicture', 22);
+    $picture = $db->getOne('picture');
+
+    $_picture = new DataManager('Picture');
+    $_picture->load($picture['idPicture']);
+
+    if ($picture == null)
+    {
+        echo "all done";
+    }
+    else
+    {
+
+        $fd = tmpfile();
+        $picture = $dbxClient->getThumbnail($_picture->getField('path'), 'png', 'xl');
+
+        $fpr = tmpfile();
+        fseek($fpr, 0); //seek to second byte
+        fwrite($fpr, $picture[1]);
+
+
+        $tempFile = stream_get_meta_data($fpr)['uri'];
+        copy($tempFile, './asd.jpg');
+
+
+        fclose($fpr);
+
+    }
+
+
+}
 else if ($requestPath == "/download") {
-    $dbxClient = getClient();
+    //$dbxClient = getClient();
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
 
     if ($dbxClient === false) {
         header("Location: ".getPath("dropbox-auth-start"));
@@ -132,6 +390,19 @@ else if ($requestPath === "/dropbox-auth-finish") {
 
     // NOTE: A real web app would store the access token in a database.
     $_SESSION['access-token'] = $accessToken;
+
+    $_user = new DataManager('User');
+    $_user->setField('userName', 'HackTheVisual');
+    $_user->setField('session', $accessToken);
+    $_user->save();
+
+    $_folder = new DataManager('Picture');
+    $_folder->setField('idUser', 1);
+    $_folder->setField('path', '/Pictures');
+    $_folder->setField('isFolder', true);
+    $_folder->save();
+
+    header('Location: '.getPath(""));
 
     echo renderHtmlPage("Authorized!",
         "Auth complete, <a href='".htmlspecialchars(getPath(""))."'>click here</a> to browse.");
