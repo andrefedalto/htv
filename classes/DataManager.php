@@ -13,11 +13,23 @@ class DataManager {
     //Armazena os campos pra cada tipo de dado, e tambem se o campo é obrigatorio (true)
     private $_validFields = array(
 
-        'Feel' => array(
-            'idFeel'            => false,
-            'idPatient'         => true,
-            'feel'              => true,
-            'date'              => true
+        'User' => array(
+            'idUser'            => false,
+            'userName'         => true,
+            'session'              => false
+        ),
+
+        'Picture' => array(
+            'idPicture'            => false,
+            'idUser'         => true,
+            'path'         => true,
+            'latitude'         => false,
+            'longitude'         => false,
+            'date'         => false,
+            'address'         => false,
+            'city'         => false,
+            'country'         => false,
+            'isFolder'              => false
         )
 
     );
