@@ -1,238 +1,107 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "version": "1.2.x",
-        "title": "Clara API",
-        "description": "Clara Health Assistant API.",
-        "termsOfService": "http://hackrisk.utfapp.com",
-        "contact": {
-            "name": "Clara team",
-            "email": "clara@hackrisk.com",
-            "url": "http://hackrisk.utfapp.com"
-        },
-        "license": {
-            "name": "Proprietary",
-            "url": "http://hackrisk.utfapp.com"
-        }
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.x",
+    "title": "RememberIt  API",
+    "description": "RememberIt API.",
+    "termsOfService": "http://htv.utfapp.com",
+    "contact": {
+      "name": "RememberIt team",
+      "email": "rememberit@hackthevisual.com",
+      "url": "http://htv.utfapp.com"
     },
-    "host": "hackrisk.utfapp.com",
-    "basePath": "/",
-    "tags": [
-        {
-            "name": "auth",
-            "description": "Autenticação do usuário"
-        },
-        {
-            "name": "aluno",
-            "description": "Informações do aluno"
-        },
-        {
-            "name": "prescriptions",
-            "description": "Drug prescriptions"
-        },
-        {
-            "name": "exams",
-            "description": "Exams data"
-        },
-        {
-            "name": "feeling",
-            "description": "Patient feel data"
-        }
-    ],
-    "schemes": [
-        "http"
-    ],
-    "consumes": [
-        "application/json"
-    ],
-    "produces": [
-        "application/json"
-    ],
-    "paths": {
-        "/prescriptions": {
-            "get": {
-                "tags": [
-                    "prescriptions"
-                ],
-                "summary": "Get all prescriptions of the user",
-                "description": "Get all prescriptions of the user",
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "All done!"
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "prescriptions"
-                ],
-                "summary": "Add a new prescription",
-                "description": "Get all prescriptions of the user",
-                "consumes": [
-                    "application/json"
-                ],
-                "parameters": [
-                    {
-                        "in": "body",
-                        "name": "body",
-                        "description": "Prescription object to be added",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/Prescription"
-                        }
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "All done!"
-                    }
-                }
-            }
-        },
-        "/prescriptions/{idPrescription}": {
-            "put": {
-                "tags": [
-                    "prescriptions"
-                ],
-                "summary": "Retorna dados do aluno",
-                "description": "Retorna dados do aluno, incluindo os cursos em que ele está matriculado. O campo idCurso de cada curso é usado pra buscar mais informações de cada curso.",
-                "produces": [
-                    "application/json"
-                ],
-                "parameters": [
-                    {
-                        "name": "idPrescription",
-                        "in": "path",
-                        "description": "Prescription ID",
-                        "required": true,
-                        "type": "integer"
-                    },
-                    {
-                        "name": "startTime",
-                        "in": "header",
-                        "description": "Start time taking the drug",
-                        "required": true,
-                        "type": "string",
-                        "default": "2015-05-13 00:00:00"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "All done!"
-                    }
-                }
-            }
-        },
-        "/exams": {
-            "post": {
-                "tags": [
-                    "exams"
-                ],
-                "summary": "Add a new exam",
-                "description": "Add a new exam data",
-                "consumes": [
-                    "application/json"
-                ],
-                "parameters": [
-                    {
-                        "name": "examType",
-                        "in": "header",
-                        "description": "Exam type",
-                        "required": true,
-                        "type": "string",
-                        "default": "glycemia"
-                    },
-                    {
-                        "name": "examValue",
-                        "in": "header",
-                        "description": "Exam value",
-                        "required": true,
-                        "type": "string",
-                        "default": "80"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "All done!"
-                    }
-                }
-            }
-        },
-        "/feeling": {
-            "post": {
-                "tags": [
-                    "feeling"
-                ],
-                "summary": "Add a new feeling report",
-                "description": "Add a new feeling report",
-                "consumes": [
-                    "application/json"
-                ],
-                "parameters": [
-                    {
-                        "name": "feel",
-                        "in": "header",
-                        "description": "How are you feeling from 1 to 10?",
-                        "required": true,
-                        "type": "integer"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "All done!"
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "Prescription": {
-            "required": [
-                "drugName",
-                "dose",
-                "doseUnit",
-                "days",
-                "frequency",
-                "reason"
-            ],
-            "properties": {
-                "drugName": {
-                    "type": "string",
-                    "description": "drug name"
-                },
-                "dose": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "doseUnit": {
-                    "type": "string",
-                    "example": "ml"
-                },
-                "days": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "frequency": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "reason": {
-                    "type": "string",
-                    "description": "prescription reason"
-                }
-            }
-        }
+    "license": {
+      "name": "Proprietary",
+      "url": "http://htv.utfapp.com"
     }
+  },
+  "host": "htv.utfapp.com",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "search",
+      "description": "Searches"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/searchByLocation": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search pictures based on location",
+        "description": "Search pictures based on location",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "description": "Latitude",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "description": "Longitude",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "description": "Area to search",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "All done!"
+          }
+        }
+      }
+    },
+    "/searchByTags": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search pictures by tags",
+        "description": "Search pictures based on tags",
+        "parameters": [
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "Comma-separated list of tags",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "All done!"
+          }
+        }
+      }
+    }
+  }
 }

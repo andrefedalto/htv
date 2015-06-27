@@ -260,38 +260,22 @@ else if ($requestPath == "/thumb") {
         exit;
     }
 
-
-
-    $db->where('idPicture', 22);
-    $picture = $db->getOne('picture');
-
-    $_picture = new DataManager('Picture');
-    $_picture->load($picture['idPicture']);
-
-    if ($picture == null)
-    {
-        echo "all done";
+    if (!isset($_GET['path'])) {
+        header("Location: ".getPath(""));
+        exit;
     }
-    else
-    {
+    $path = $_GET['path'];
 
-        $fd = tmpfile();
-        $picture = $dbxClient->getThumbnail($_picture->getField('path'), 'png', 'xl');
+    $fd = tmpfile();
+    //$metadata = $dbxClient->getFile($path, $fd);
+    $metadata = $dbxClient->getThumbnail($_GET['path'], 'jpeg', 'xl');
 
-        $fpr = tmpfile();
-        fseek($fpr, 0); //seek to second byte
-        fwrite($fpr, $picture[1]);
-
-
-        $tempFile = stream_get_meta_data($fpr)['uri'];
-        copy($tempFile, './asd.jpg');
-
-
-        fclose($fpr);
-
-    }
-
-
+    header("Content-Type: ".$metadata[0]['mime_type']);
+    fseek($fd, 0);
+    fwrite($fd, $metadata[1]);
+    fseek($fd, 0);
+    fpassthru($fd);
+    fclose($fd);
 }
 else if ($requestPath == "/download") {
     //$dbxClient = getClient();

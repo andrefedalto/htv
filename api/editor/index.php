@@ -8,4 +8,5 @@
 
 $path = explode("editor", $_SERVER['PHP_SELF']);
 $url = "http://editor.swagger.io/#/?import=http://" . $_SERVER['HTTP_HOST'].$path[0]."htv.json";
+echo $url;
 header("Location: $url");
