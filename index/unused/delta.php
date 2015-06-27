@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-require_once __DIR__.'/helper.php';
+require_once __DIR__ . '/helper.php';
 use \Dropbox as dbx;
 
 /* @var dbx\Client $client */

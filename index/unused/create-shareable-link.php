@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-require_once __DIR__.'/helper.php';
+require_once __DIR__ . '/helper.php';
 use \Dropbox as dbx;
 
 list($client, $dropboxPath, $localPath) = parseArgs("get-shareable-link", $argv,
