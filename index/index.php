@@ -178,7 +178,7 @@ else if ($requestPath == "/tagger") {
 
 
     $db->where('tagged', 0);
-    //$db->where('idPicture', 338);
+    //$db->where('idPicture', 344);
     $picture = $db->getOne('picture');
 
     $_picture = new DataManager('Picture');
@@ -206,25 +206,20 @@ else if ($requestPath == "/tagger") {
 
 
         $tempFile = stream_get_meta_data($fd)['uri'];
-        copy($tempFile, './temp.jpg');
+        copy($tempFile, './'.base64_encode($_picture->getField('path')).'.jpg');
 
         fclose($fd);
 
-        $url =  'http://corsify.appspot.com/https://htv.utfapp.com/index/temp.jpg';
+        $url =  'http://corsify.appspot.com/https://htv.utfapp.com/index/'.base64_encode($_picture->getField('path')).'.jpg';
 
-
-//NOt needed since dropbox gives the thumb 1024x768
-//        $thumb = new Imagick();
-//        $thumb->readImage('temp.jpg');
-//        $thumb->resizeImage(1024,768,Imagick::FILTER_LANCZOS,1);
-//        $thumb->writeImage('temp.jpg');
-//        $thumb->clear();
-//        $thumb->destroy();
 
 
         $curl = new Curl();
         $curl->setHeader('Authorization', 'Bearer TE2hw55xpVOgnLXELVnp9kuivazDfO');
         $curl->get('https://api.clarifai.com/v1/tag/?url='.$url);
+
+        //imagga
+        //YWNjX2M5NjU4OWZkYWQ1M2VlNTo2MjdmZWYzNjQ1MTM2M2U4ZTI3YmQwZmU3ODg2NGU2Mw==
 
         $data = $curl->response;
 
@@ -243,12 +238,109 @@ else if ($requestPath == "/tagger") {
                 $_pictureTag->setField('idPicture', $_picture->getField('idPicture'));
                 $_pictureTag->setField('idTag', $_tag->getField('idTag'));
                 $_pictureTag->setField('probs', $data->result->tag->probs[$key]);
+                $_pictureTag->setField('api', 'clarifai');
                 $_pictureTag->save();
             }
         }
 
         $_picture->setField('tagged', 1);
         $_picture->save();
+
+        unlink('./'.base64_encode($_picture->getField('path')).'.jpg');
+
+        header("Refresh:0");
+
+
+    }
+
+
+}
+else if ($requestPath == "/taggerImagga") {
+    //$dbxClient = getClient();
+    $user = $db->getOne('user');
+    $dbxClient = new dbx\Client($user['session'], "PHP-Example/1.0");
+
+    if ($dbxClient === false) {
+        header("Location: ".getPath("dropbox-auth-start"));
+        exit;
+    }
+
+
+
+    $db->where('tagged', 0);
+    //$db->where('idPicture', 11);
+    $picture = $db->getOne('picture');
+
+    $_picture = new DataManager('Picture');
+    $_picture->load($picture['idPicture']);
+
+    if ($picture == null)
+    {
+        echo "all done";
+
+    }
+    else
+    {
+
+        $fd = tmpfile();
+
+
+//        $metadata = $dbxClient->getFile($picture['path'], $fd);
+        $picture = $dbxClient->getThumbnail($_picture->getField('path'), 'jpeg', 'xl');
+
+        $_picture->setField('image', $picture[1]);
+        $_picture->setField('mime_type', $picture[0]['mime_type']);
+
+        fwrite($fd, $picture[1]);
+
+
+
+        $tempFile = stream_get_meta_data($fd)['uri'];
+        copy($tempFile, './'.base64_encode($_picture->getField('path')).'.jpg');
+
+        fclose($fd);
+
+        $url =  'http://htv.utfapp.com/index/'.base64_encode($_picture->getField('path')).'.jpg';
+
+
+
+
+
+
+        $curl = new Curl();
+        $curl->setHeader('Authorization', 'Basic YWNjX2M5NjU4OWZkYWQ1M2VlNTo2MjdmZWYzNjQ1MTM2M2U4ZTI3YmQwZmU3ODg2NGU2Mw==');
+        $curl->get('http://api.imagga.com/v1/tagging?version=2&url='.$url);
+
+        //imagga
+        //
+        //var_dump($curl->response);die();
+
+        $data = $curl->response->results[0]->tags;
+
+        if (isset($curl->response->results[0]))
+        {
+            $data = $curl->response->results[0]->tags;
+            //var_dump($data->result->tag->classes);
+
+            foreach($data as $tag)
+            {
+                $_tag = new DataManager('Tag');
+                $_tag->setField('tag', $tag->tag);
+                $_tag->save();
+
+                $_pictureTag = new DataManager('PictureTag');
+                $_pictureTag->setField('idPicture', $_picture->getField('idPicture'));
+                $_pictureTag->setField('idTag', $_tag->getField('idTag'));
+                $_pictureTag->setField('probs', $tag->confidence);
+                $_pictureTag->setField('api', 'imagga');
+                $_pictureTag->save();
+            }
+        }
+
+        $_picture->setField('tagged', 1);
+        $_picture->save();
+
+        unlink('./'.base64_encode($_picture->getField('path')).'.jpg');
 
         header("Refresh:0");
 
@@ -332,7 +424,6 @@ else if ($requestPath == "/thumb") {
 else if ($requestPath == "/thumb2") {
     //$dbxClient = getClient();
 
-    $_GET['path'] = base64_decode($_GET['path']);
 
 
     $user = $db->getOne('user');

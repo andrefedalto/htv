@@ -93,15 +93,20 @@ $app->get(
             $tmp['country'] = $picture['country'];
             $tmp['date'] = $picture['date'];
 
-            $db->where("idPicture", $picture['idPicture']);
-            $tags = $db->rawQuery("SELECT t.tag FROM picturetag pt LEFT JOIN tag t ON t.idTag = pt.idTag WHERE idPicture = ".$picture['idPicture']);
+            $tags = $db->rawQuery("SELECT tag, api FROM gallery WHERE idPicture = ".$picture['idPicture']." ORDER BY probs DESC");
+
             $t = array();
             foreach ($tags as $tag)
             {
-                array_push($t, $tag['tag']);
+                if (!isset($t[$tag['api']]))
+                    $t[$tag['api']] = array();
+
+                array_push($t[$tag['api']], $tag['tag']);
             }
 
-            $tmp['tags'] = implode(",", $t);
+            $tmp['tags'] = ($t['clarifai']);
+            if (isset($t['imagga']))
+                $tmp['tagsImagga'] = ($t['imagga']);
 
             $year = date("Y", strtotime($tmp['date']));
 
@@ -182,16 +187,20 @@ $app->get(
             $tmp['country'] = $picture['country'];
             $tmp['date'] = $picture['date'];
 
-            $db->where("idPicture", $picture['idPicture']);
-            $tags = $db->rawQuery("SELECT t.tag FROM picturetag pt LEFT JOIN tag t ON t.idTag = pt.idTag WHERE idPicture = ".$picture['idPicture']);
+            $tags = $db->rawQuery("SELECT tag, api FROM gallery WHERE idPicture = ".$picture['idPicture']." ORDER BY probs DESC");
 
             $t = array();
             foreach ($tags as $tag)
             {
-                array_push($t, $tag['tag']);
+                if (!isset($t[$tag['api']]))
+                    $t[$tag['api']] = array();
+
+                array_push($t[$tag['api']], $tag['tag']);
             }
 
-            $tmp['tags'] = implode(",", $t);
+            $tmp['tags'] = ($t['clarifai']);
+            if (isset($t['imagga']))
+                $tmp['tagsImagga'] = ($t['imagga']);
 
             array_push($_output, $tmp);
         }

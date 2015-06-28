@@ -45,7 +45,8 @@ class DataManager {
             'idPictureTag'            => false,
             'idPicture'         => true,
             'idTag'         => true,
-            'probs'              => false
+            'probs'              => false,
+            'api'               => false
         )
 
     );
