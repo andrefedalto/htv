@@ -169,6 +169,7 @@ $app->get(
             LIMIT 15
         ";
 
+
         $pictures = $db->rawQuery($query);
 
 
