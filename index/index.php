@@ -57,6 +57,8 @@ else if ($requestPath === "/geocoder")
 
     if ($picture == null)
     {
+        header("Location: ".getPath("tagger"));
+
         echo "all done";
     }
     else
@@ -119,6 +121,7 @@ else if ($requestPath === "/indexer") {
 
     if ($folder == null)
     {
+        header("Location: ".getPath("geocoder"));
         echo "all done";
     }
     else
@@ -175,7 +178,7 @@ else if ($requestPath == "/tagger") {
 
 
     $db->where('tagged', 0);
-    //$db->where('idPicture', 111);
+    //$db->where('idPicture', 338);
     $picture = $db->getOne('picture');
 
     $_picture = new DataManager('Picture');
@@ -184,6 +187,7 @@ else if ($requestPath == "/tagger") {
     if ($picture == null)
     {
         echo "all done";
+
     }
     else
     {
@@ -219,7 +223,7 @@ else if ($requestPath == "/tagger") {
 
 
         $curl = new Curl();
-        $curl->setHeader('Authorization', 'Bearer PN1ijSZQLfi0nyL7JQybssi5h4V22G');
+        $curl->setHeader('Authorization', 'Bearer TE2hw55xpVOgnLXELVnp9kuivazDfO');
         $curl->get('https://api.clarifai.com/v1/tag/?url='.$url);
 
         $data = $curl->response;
@@ -476,7 +480,8 @@ else if ($requestPath === "/dropbox-auth-finish") {
     echo renderHtmlPage("Authorized!",
         "Auth complete, <a href='".htmlspecialchars(getPath(""))."'>click here</a> to browse.");
 }
-else if ($requestPath === "/dropbox-auth-unlink") {
+else if ($requestPath === "/dropbox-auth-unlink")
+{
     // "Forget" the access token.
     unset($_SESSION['access-token']);
     echo renderHtmlPage("Unlinked.",
